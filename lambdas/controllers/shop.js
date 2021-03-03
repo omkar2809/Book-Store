@@ -28,7 +28,7 @@ exports.getBook = async event => {
         }
         const { Item: book } = await db.get(params).promise() 
         if(!book) {
-            return response(404, {message: 'Book Not Found'})
+            return response(404, { message: 'Book Not Found' })
         }
         return response(200, book)
     }

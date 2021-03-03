@@ -23,21 +23,19 @@ provider:
           Resource: '*'
 
 functions:
-  hello:
-    handler: handler.hello
   getBooks:
-    handler: lambdas/endpoints/shop.getBooks
+    handler: lambdas/controllers/shop.getBooks
     events:
       - http:
           path: getBooks
           method: GET
           cors: true
   getBook:
-    handler: lambdas/endpoints/shop.getBook
+    handler: lambdas/controllers/shop.getBook
     events:
     - http:
         path: /getBook/{id}
-        method: get
+        method: GET
         cors: true
 
 resources:
