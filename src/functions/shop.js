@@ -5,7 +5,7 @@ const { response } = require('../utils/response')
 
 const db = new AWS.DynamoDB.DocumentClient()
 
-const productTable = "products"
+const productTable = process.env.PRODUCTS_TABLE
 
 exports.getBooks = async event => {
     try{
@@ -13,7 +13,7 @@ exports.getBooks = async event => {
         return response(200, books)
     }
     catch(err) {
-        return response(500, {err})
+        return response(500, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -33,6 +33,6 @@ exports.getBook = async event => {
         return response(200, book)
     }
     catch(err) {
-        return response(500, {err})
+        return response(500, { message: 'Something went wrong!', error: {err} })
     }
 }

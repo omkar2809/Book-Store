@@ -5,6 +5,7 @@ frameworkVersion: '2'
 custom:
   settings:
     PRODUCTS_TABLE: products
+    USERS_TABLE: users
 
 provider:
   name: aws
@@ -13,7 +14,10 @@ provider:
   apiGateway:
     shouldStartNameWithService: true
   lambdaHashingVersion: 20201221
-  environment: ${self:custom.settings}
+  # environment: ${self:custom.settings}
+  environment:
+    PRODUCTS_TABLE: ${self:custom.settings.PRODUCTS_TABLE}
+    USERS_TABLE: ${self:custom.settings.USERS_TABLE}
   iam:
     role:
       statements:
@@ -24,19 +28,26 @@ provider:
 
 functions:
   getBooks:
-    handler: lambdas/controllers/shop.getBooks
+    handler: src/functions/shop.getBooks
     events:
       - http:
           path: getBooks
           method: GET
           cors: true
   getBook:
-    handler: lambdas/controllers/shop.getBook
+    handler: src/functions/shop.getBook
     events:
     - http:
         path: /getBook/{id}
         method: GET
         cors: true
+  signUp:
+    handler: src/functions/auth.signUp
+    events:
+      - http:
+          path: signup
+          method: post
+          cors: true
 
 resources:
   Resources:
@@ -50,6 +61,24 @@ resources:
         KeySchema:
           - AttributeName: "id"
             KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.settings.USERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+          - AttributeName: "email"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "id"
+            KeyType: "HASH"
+          - AttributeName: "email"
+            KeyType: "RANGE"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
