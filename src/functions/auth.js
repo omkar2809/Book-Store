@@ -1,30 +1,30 @@
 const AWS = require('aws-sdk')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 const { v4: uuid } = require('uuid')
 
 const { response } = require('../utils/response')
 
 const db = new AWS.DynamoDB.DocumentClient()
 
-const usersTable = 'users'
+const usersTable = process.env.USERS_TABLE
 
 exports.signUp = async event => {
     const body = JSON.parse(event.body)
     const email = body.email
     const password = body.password
     try {
-        const { Items: users } = await db.scan({
-            TableName: usersTable,
-            FilterExpression: 'email = :email',
-            ExpressionAttributeValues: {
-                ':email': email
-            }
+        const { Item: user } = await db.get({
+            Key: {
+                email: email
+            },
+            TableName: usersTable
         }).promise()
-        console.log(users)
-        if(users.length > 0) {
+        console.log(user)
+        if (user) {
             return response(400, { message: 'User already exist!' })
         }
-        const hashedPassword =  await bcrypt.hash(password, 12)
+        const hashedPassword = await bcrypt.hash(password, 12)
         const id = uuid()
         await db.put({
             TableName: usersTable,
@@ -40,6 +40,41 @@ exports.signUp = async event => {
         console.log('User created')
         return response(200, { message: 'User Created' })
     } catch(err) {
+        console.log(err)
+        return response(500, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.login = async event => {
+    const body = JSON.parse(event.body)
+    const email = body.email
+    const password = body.password
+    try {
+        const { Item: user } = await db.get({
+            TableName: usersTable,
+            Key: {
+                email: email
+            }
+        }).promise()
+        console.log(user)
+        if(user) {
+            const isEqual = await bcrypt.compare(password, user.password)
+            if(isEqual) {
+                const token = jwt.sign({
+                    id: user.id,
+                    email: user.email
+                }, 'secret', { expiresIn: '1h' })
+                return response(200, { message: 'login successfully', token: token })
+            }
+            else {
+                return response(403, { message: 'incorrect credentials' })
+            }
+        }
+        else {
+            return response(404, { message: 'User Not Found' })
+        }
+    }
+    catch(err) {
         console.log(err)
         return response(500, { message: 'Something went wrong!', error: {err} })
     }

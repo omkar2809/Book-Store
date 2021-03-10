@@ -48,6 +48,13 @@ functions:
           path: signup
           method: post
           cors: true
+  login:
+    handler: src/functions/auth.login
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
 
 resources:
   Resources:
@@ -58,9 +65,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: "id"
             AttributeType: "S"
+          - AttributeName: "userId"
+            AttributeType: "S"
         KeySchema:
           - AttributeName: "id"
             KeyType: "HASH"
+          - AttributeName: "userId"
+            KeyType: "RANGE"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
@@ -70,15 +81,11 @@ resources:
       Properties:
         TableName: ${self:custom.settings.USERS_TABLE}
         AttributeDefinitions:
-          - AttributeName: "id"
-            AttributeType: "S"
           - AttributeName: "email"
             AttributeType: "S"
         KeySchema:
-          - AttributeName: "id"
-            KeyType: "HASH"
           - AttributeName: "email"
-            KeyType: "RANGE"
+            KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
