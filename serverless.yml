@@ -14,10 +14,10 @@ provider:
   apiGateway:
     shouldStartNameWithService: true
   lambdaHashingVersion: 20201221
-  # environment: ${self:custom.settings}
   environment:
     PRODUCTS_TABLE: ${self:custom.settings.PRODUCTS_TABLE}
     USERS_TABLE: ${self:custom.settings.USERS_TABLE}
+    JWT_SECRET: "ThisShipHasSailed"
   iam:
     role:
       statements:
@@ -27,6 +27,8 @@ provider:
           Resource: '*'
 
 functions:
+  isAuth:
+    handler: src/utils/isAuth.isAuth
   getBooks:
     handler: src/functions/shop.getBooks
     events:
@@ -46,15 +48,23 @@ functions:
     events:
       - http:
           path: signup
-          method: post
+          method: POST
           cors: true
   login:
     handler: src/functions/auth.login
     events:
       - http:
           path: login
-          method: post
+          method: POST
           cors: true
+  addBook:
+    handler: src/functions/shop.addBook
+    events:
+      - http:
+          path: addBook
+          method: POST
+          cors: true
+          authorizer: isAuth
 
 resources:
   Resources:
