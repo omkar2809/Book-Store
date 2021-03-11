@@ -19,7 +19,7 @@ exports.getBooks = async event => {
 
 exports.getBook = async event => {
     try{
-        const id = event.pathParameters.id;
+        const id = event.pathParameters.id
         const params = {
             Key: {
                 id: id
@@ -55,7 +55,7 @@ exports.addBook = async event => {
             TableName: productTable,
             Item: {
                 id: id,
-                userId: sellerId,
+                sellerId: sellerId,
                 sellerEmail: sellerEmail,
                 title: title,
                 description: description,
@@ -70,6 +70,81 @@ exports.addBook = async event => {
         return response(200, { message: 'Book Created' })
     }
     catch(err) {
+        return response(500, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.updateBook = async event => {
+    const body = JSON.parse(event.body)
+    const id = event.pathParameters.id
+
+    const sellerEmail = event.requestContext.authorizer.email
+    const sellerId = event.requestContext.authorizer.userId
+
+    try {
+        const params = {
+            TableName: productTable,
+            Key: {
+                id: id
+            }
+        }
+        const { Item: book } = await db.get(params).promise() 
+        console.log(book)
+        if(!book) {
+            return response(404, { message: 'Book Not Found' })
+        }
+        if(book.sellerEmail !== sellerEmail && book.sellerId !== sellerId) {
+            return response(403, { message: 'Unauthorized' })
+        }
+        const expressionAttributeValues = {
+            ':updatedAt': new Date().toISOString()
+        }
+        var updatedExpression = `SET `
+        Object.keys(body).map(k => {
+            expressionAttributeValues[`:${k}`] = body[k]
+            updatedExpression += `${k} = :${k}, `
+        })
+        updatedExpression += 'updatedAt = :updatedAt'
+        await db.update({
+            ...params,
+            UpdateExpression: updatedExpression,
+            ExpressionAttributeValues: expressionAttributeValues,
+            ReturnValues: 'UPDATED_NEW'
+        }).promise()
+        return response(200, { message: 'Book updated' })
+    }
+    catch(err) {
+        console.log(err)
+        return response(500, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.deleteBook = async event => {
+    const id = event.pathParameters.id
+
+    const sellerEmail = event.requestContext.authorizer.email
+    const sellerId = event.requestContext.authorizer.userId
+
+    try {
+        const params = {
+            TableName: productTable,
+            Key: {
+                id: id
+            }
+        }
+        const { Item: book } = await db.get(params).promise() 
+        console.log(book)
+        if(!book) {
+            return response(404, { message: 'Book Not Found' })
+        }
+        if(book.sellerEmail !== sellerEmail && book.sellerId !== sellerId) {
+            return response(403, { message: 'Unauthorized' })
+        }
+        await db.delete(params).promise()
+        return response(200, { message: 'Book Deleted' })
+    }
+    catch(err) {
+        console.log(err)
         return response(500, { message: 'Something went wrong!', error: {err} })
     }
 }

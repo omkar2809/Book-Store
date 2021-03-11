@@ -11,7 +11,12 @@ exports.isAuth = async event => {
         authorizerArr[1].length === 0) {
         return generatePolicy('undefined', 'Deny', event.methodArn)
     }
-    var decodedJwt = jwt.verify(token, process.env.JWT_SECRET)
+    try {
+        var decodedJwt = jwt.verify(token, process.env.JWT_SECRET)
+    }
+    catch(err) {
+        return generatePolicy('undefined', 'Deny', event.methodArn)
+    }
     console.log(decodedJwt)
     if (typeof decodedJwt.email !== 'undefined' &&
     decodedJwt.email.length > 0) {

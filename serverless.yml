@@ -65,6 +65,22 @@ functions:
           method: POST
           cors: true
           authorizer: isAuth
+  updateBook:
+    handler: src/functions/shop.updateBook
+    events:
+    - http:
+        path: /updateBook/{id}
+        method: POST
+        cors: true
+        authorizer: isAuth
+  deleteBook:
+    handler: src/functions/shop.deleteBook
+    events:
+    - http:
+        path: /deleteBook/{id}
+        method: DELETE
+        cors: true
+        authorizer: isAuth
 
 resources:
   Resources:
@@ -75,13 +91,9 @@ resources:
         AttributeDefinitions:
           - AttributeName: "id"
             AttributeType: "S"
-          - AttributeName: "userId"
-            AttributeType: "S"
         KeySchema:
           - AttributeName: "id"
             KeyType: "HASH"
-          - AttributeName: "userId"
-            KeyType: "RANGE"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
