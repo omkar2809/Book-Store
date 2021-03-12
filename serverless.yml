@@ -57,6 +57,14 @@ functions:
           path: login
           method: POST
           cors: true
+  profile:
+    handler: src/functions/auth.profile
+    events:
+      - http:
+          path: profile
+          method: GET
+          cors: true
+          authorizer: isAuth
   addBook:
     handler: src/functions/shop.addBook
     events:
@@ -70,7 +78,7 @@ functions:
     events:
     - http:
         path: /updateBook/{id}
-        method: POST
+        method: PUT
         cors: true
         authorizer: isAuth
   deleteBook:
@@ -78,6 +86,38 @@ functions:
     events:
     - http:
         path: /deleteBook/{id}
+        method: DELETE
+        cors: true
+        authorizer: isAuth
+  getCart:
+    handler: src/functions/cart.getCart
+    events:
+    - http:
+        path: /getCart
+        method: GET
+        cors: true
+        authorizer: isAuth
+  addToCart:
+    handler: src/functions/cart.addToCart
+    events:
+    - http:
+        path: /addToCart/{id}
+        method: POST
+        cors: true
+        authorizer: isAuth
+  removeFromCart:
+    handler: src/functions/cart.removeFromCart
+    events:
+    - http:
+        path: /removeFromCart/{id}
+        method: DELETE
+        cors: true
+        authorizer: isAuth
+  clearCart:
+    handler: src/functions/cart.clearCart
+    events:
+    - http:
+        path: /clearCart
         method: DELETE
         cors: true
         authorizer: isAuth

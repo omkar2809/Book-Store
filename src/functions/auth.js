@@ -79,3 +79,20 @@ exports.login = async event => {
         return response(500, { message: 'Something went wrong!', error: {err} })
     }
 }
+
+exports.profile = async event => {
+    const userEmail = event.requestContext.authorizer.email
+    try {
+        const { Item: user } = await db.get({
+            TableName: usersTable,
+            Key: {
+                email: userEmail
+            }
+        }).promise()
+        return response(200, {user: user})
+    }
+    catch(err) {
+        console.log(err)
+        return response(500, { message: 'Something went wrong!', error: {err} })
+    }
+}
