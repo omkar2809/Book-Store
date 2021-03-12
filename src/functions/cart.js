@@ -1,5 +1,4 @@
 const AWS = require('aws-sdk')
-const { v4: uuid } = require('uuid')
 
 const { response } = require('../utils/response')
 

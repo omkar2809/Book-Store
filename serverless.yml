@@ -6,6 +6,7 @@ custom:
   settings:
     PRODUCTS_TABLE: products
     USERS_TABLE: users
+    ORDERS_TABLE: orders
 
 provider:
   name: aws
@@ -17,6 +18,7 @@ provider:
   environment:
     PRODUCTS_TABLE: ${self:custom.settings.PRODUCTS_TABLE}
     USERS_TABLE: ${self:custom.settings.USERS_TABLE}
+    ORDERS_TABLE: ${self:custom.settings.ORDERS_TABLE}
     JWT_SECRET: "ThisShipHasSailed"
   iam:
     role:
@@ -121,6 +123,22 @@ functions:
         method: DELETE
         cors: true
         authorizer: isAuth
+  postOrder:
+    handler: src/functions/order.postOrder
+    events:
+    - http:
+        path: /postOrder
+        method: POST
+        cors: true
+        authorizer: isAuth
+  getOrders:
+    handler: src/functions/order.getOrders
+    events:
+    - http:
+        path: /getOrders
+        method: GET
+        cors: true
+        authorizer: isAuth
 
 resources:
   Resources:
@@ -147,6 +165,20 @@ resources:
             AttributeType: "S"
         KeySchema:
           - AttributeName: "email"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.settings.ORDERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "id"
             KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
