@@ -1,19 +1,27 @@
 const AWS = require('aws-sdk')
 const { v4: uuid } = require('uuid')
+const fileType = require('file-type')
 
 const { response } = require('../utils/response')
 
 const db = new AWS.DynamoDB.DocumentClient()
+const s3 = new AWS.S3()
 
 const productTable = process.env.PRODUCTS_TABLE
 
 exports.getBooks = async event => {
     try{
-        const { Items: books } = await db.scan({ TableName: productTable }).promise()
+        const { Items: books } = await db.scan({ 
+            TableName: productTable,
+            FilterExpression: 'stock <> :stock',
+            ExpressionAttributeValues: {
+                ':stock': 0
+            }
+        }).promise()
         return response(200, books)
     }
     catch(err) {
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -33,7 +41,7 @@ exports.getBook = async event => {
         return response(200, book)
     }
     catch(err) {
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -44,13 +52,32 @@ exports.addBook = async event => {
 
     const title = body.title
     const description = body.description
-    const imageUrl = body.imageUrl
     const price = body.price
     const author = body.author
     const publisher = body.publisher
+    const stock = body.stock
+    const imageData = body.imageUrl
 
     id = uuid()
     try {
+        const buffer = Buffer.from(imageData, 'base64');
+        const fileInfo = await fileType.fromBuffer(buffer);
+        const detectedExt = fileInfo.ext
+        const detectedMime = fileInfo.mime
+        const name = uuid();
+        const key = `${name}-${new Date().toISOString()}.${detectedExt}`
+        const uploadedImage = await s3
+            .upload({
+                Body: buffer,
+                Key: key,
+                ContentType: detectedMime,
+                Bucket: process.env.IMAGE_UPLOAD_BUCKET,
+                ACL: 'public-read',
+            })
+            .promise();
+
+        const imageUrl = uploadedImage.Location
+
         await db.put({
             TableName: productTable,
             Item: {
@@ -63,6 +90,7 @@ exports.addBook = async event => {
                 price: price,
                 author: author,
                 publisher: publisher,
+                stock: stock,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             }
@@ -70,7 +98,7 @@ exports.addBook = async event => {
         return response(200, { message: 'Book Created' })
     }
     catch(err) {
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -96,6 +124,28 @@ exports.updateBook = async event => {
         if(book.sellerEmail !== sellerEmail && book.sellerId !== sellerId) {
             return response(403, { message: 'Unauthorized' })
         }
+
+        if(body.imageUrl) {
+            const imageData = body.imageUrl
+            const buffer = Buffer.from(imageData, 'base64');
+            const fileInfo = await fileType.fromBuffer(buffer);
+            const detectedExt = fileInfo.ext
+            const detectedMime = fileInfo.mime
+            const name = uuid();
+            const key = `${name}-${new Date().toISOString()}.${detectedExt}`
+
+            const uploadedImage = await s3
+            .upload({
+                Body: buffer,
+                Key: key,
+                ContentType: detectedMime,
+                Bucket: process.env.IMAGE_UPLOAD_BUCKET,
+                ACL: 'public-read',
+            })
+            .promise();
+            body.imageUrl = uploadedImage.Location
+        }
+
         const expressionAttributeValues = {
             ':updatedAt': new Date().toISOString()
         }
@@ -115,7 +165,7 @@ exports.updateBook = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -145,6 +195,23 @@ exports.deleteBook = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.getSellerBooks = async event => {
+    const sellerEmail = event.requestContext.authorizer.email
+    try{
+        const { Items: books } = await db.scan({ 
+            TableName: productTable,
+            FilterExpression: 'sellerEmail = :sellerEmail',
+            ExpressionAttributeValues: {
+                ':sellerEmail': sellerEmail
+            }
+        }).promise()
+        return response(200, books)
+    }
+    catch(err) {
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }

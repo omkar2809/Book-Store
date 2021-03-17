@@ -21,7 +21,7 @@ exports.getCart = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -79,7 +79,7 @@ exports.addToCart = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -126,7 +126,7 @@ exports.removeFromCart = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -148,6 +148,6 @@ exports.clearCart = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }

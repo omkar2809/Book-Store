@@ -12,6 +12,8 @@ const usersTable = process.env.USERS_TABLE
 exports.signUp = async event => {
     const body = JSON.parse(event.body)
     const email = body.email
+    const name = body.name
+    const phoneNo = body.phoneNo
     const password = body.password
     try {
         const { Item: user } = await db.get({
@@ -32,6 +34,8 @@ exports.signUp = async event => {
                 id: id,
                 email: email,
                 password: hashedPassword,
+                name: name,
+                phoneNo: phoneNo,
                 cart: { items: [] },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -41,7 +45,7 @@ exports.signUp = async event => {
         return response(200, { message: 'User Created' })
     } catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -76,7 +80,7 @@ exports.login = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -93,6 +97,50 @@ exports.profile = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.updateProfile = async event => {
+    const body = JSON.parse(event.body)
+
+    const email = event.requestContext.authorizer.email
+    const userId = event.requestContext.authorizer.userId
+
+    try {
+        const params = {
+            TableName: usersTable,
+            Key: {
+                email: email
+            }
+        }
+        const { Item: user } = await db.get(params).promise() 
+        console.log(user)
+        if(!user) {
+            return response(404, { message: 'user Not Found' })
+        }
+        if(user.email !== email && user.id !== userId) {
+            return response(403, { message: 'Unauthorized' })
+        }
+        const expressionAttributeValues = {
+            ':updatedAt': new Date().toISOString()
+        }
+        var updatedExpression = `SET `
+        Object.keys(body).map(k => {
+            expressionAttributeValues[`:${k}`] = body[k]
+            updatedExpression += `${k} = :${k}, `
+        })
+        updatedExpression += 'updatedAt = :updatedAt'
+        await db.update({
+            ...params,
+            UpdateExpression: updatedExpression,
+            ExpressionAttributeValues: expressionAttributeValues,
+            ReturnValues: 'UPDATED_NEW'
+        }).promise()
+        return response(200, { message: 'user updated' })
+    }
+    catch(err) {
+        console.log(err)
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }

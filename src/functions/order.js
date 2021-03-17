@@ -22,14 +22,24 @@ exports.postOrder = async event => {
         }).promise()
         
         let totalSum = 0
+        let stockError = false
         const books = await Promise.all(user.cart.items.map(async item => {
             const { Item: book } = await db.get({
                 TableName: productTable,
                 Key: { id: item.bookId }
             }).promise()
+            if(book.stock == 0){
+                stockError = true
+                break
+            }
             totalSum += item.quantity * book.price
             return { quantity: item.quantity, book: book }
         }))
+
+        if(stockError) {
+            return response(400, { message: 'Out of Stock' })
+        }
+
         console.log(books)
 
         // TODO Stripe code
@@ -59,7 +69,7 @@ exports.postOrder = async event => {
     }
     catch(err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }
 
@@ -78,6 +88,6 @@ exports.getOrders = async event => {
     }
     catch(Err) {
         console.log(err)
-        return response(500, { message: 'Something went wrong!', error: {err} })
+        return response(400, { message: 'Something went wrong!', error: {err} })
     }
 }

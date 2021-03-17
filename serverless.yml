@@ -7,6 +7,7 @@ custom:
     PRODUCTS_TABLE: products
     USERS_TABLE: users
     ORDERS_TABLE: orders
+    IMAGE_UPLOAD_BUCKET: book-image-upload-bucket-2809
 
 provider:
   name: aws
@@ -20,12 +21,14 @@ provider:
     USERS_TABLE: ${self:custom.settings.USERS_TABLE}
     ORDERS_TABLE: ${self:custom.settings.ORDERS_TABLE}
     JWT_SECRET: "ThisShipHasSailed"
+    IMAGE_UPLOAD_BUCKET: ${self:custom.settings.IMAGE_UPLOAD_BUCKET}
   iam:
     role:
       statements:
         - Effect: Allow
           Action:
             - dynamodb:*
+            - s3:*
           Resource: '*'
 
 functions:
@@ -64,6 +67,22 @@ functions:
     events:
       - http:
           path: profile
+          method: GET
+          cors: true
+          authorizer: isAuth
+  updateProfile:
+    handler: src/functions/auth.updateProfile
+    events:
+      - http:
+          path: updateProfile
+          method: PUT
+          cors: true
+          authorizer: isAuth
+  getSellerBooks:
+    handler: src/functions/shop.getSellerBooks
+    events:
+      - http:
+          path: getSellerBooks
           method: GET
           cors: true
           authorizer: isAuth
@@ -139,9 +158,22 @@ functions:
         method: GET
         cors: true
         authorizer: isAuth
+  uploadDemo:
+    handler: src/functions/uploadDemo.handler
+    events:
+    - http:
+        path: /uploadDemo
+        method: POST
+        cors: true
 
 resources:
   Resources:
+    ImageUploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+          BucketName: book-image-upload-bucket-2809
+          AccessControl: PublicRead
+
     ProductsTable:
       Type: AWS::DynamoDB::Table
       Properties:
