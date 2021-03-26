@@ -1,5 +1,6 @@
+require('dotenv').config()
 const AWS = require('aws-sdk')
-
+const stripe = require('stripe')(process.env.STRIPE_SK)
 const { response } = require('../utils/response')
 const { v4: uuid } = require('uuid')
 
@@ -12,6 +13,7 @@ const productTable = process.env.PRODUCTS_TABLE
 const ordersTable = process.env.ORDERS_TABLE
 
 exports.postOrder = async event => {
+    const body = JSON.parse(event.body)
     const userEmail = event.requestContext.authorizer.email
     try {
         const { Item: user } = await db.get({
@@ -23,34 +25,67 @@ exports.postOrder = async event => {
         
         let totalSum = 0
         let stockError = false
-        const books = await Promise.all(user.cart.items.map(async item => {
+        let books = await Promise.all(user.cart.items.map(async item => {
             const { Item: book } = await db.get({
                 TableName: productTable,
                 Key: { id: item.bookId }
             }).promise()
-            if(book.stock == 0){
-                stockError = true
-                break
+            if(book) {
+                if(book.stock == 0){
+                    stockError = true
+                }
+                totalSum += item.quantity * book.price
+                return { quantity: item.quantity, book: book }
             }
-            totalSum += item.quantity * book.price
-            return { quantity: item.quantity, book: book }
         }))
 
         if(stockError) {
             return response(400, { message: 'Out of Stock' })
         }
 
+        books = books.filter(Boolean)
         console.log(books)
 
-        // TODO Stripe code
+        const { email, authToken } = body
+        const { token } = authToken
+        const { card } = token
+
+        console.log(card);
+        const orderId = uuid()
+
+        const customer = await stripe.customers.create({
+                email: email,
+                source: token.id
+        })
+        console.log('Customer Created.....')
+        console.log(customer)
+
+        const stripeResponse = await stripe.charges.create({
+            amount: totalSum * 100,
+            currency: 'INR',
+            customer: customer.id,
+            receipt_email: email,
+            description: 'Your Order',
+            shipping: {
+                name: card.name,
+                address: {
+                    line1: "Mumbai",
+                    country: card.address_country,
+                }
+            }
+        },{ idempotencyKey: orderId})
+
+        console.log("charge response")
+        console.log(stripeResponse)
 
         await db.put({
             TableName: ordersTable,
             Item: {
-                id: uuid(),
+                id: orderId,
                 books: books,
                 buyerEmail: userEmail,
-                totalSum: totalSum
+                totalSum: totalSum,
+                createdAt: new Date().toISOString()
             }
         }).promise()
 
@@ -65,7 +100,22 @@ exports.postOrder = async event => {
             },
             ReturnValues: 'UPDATED_NEW'
         }).promise()
-        return response(200, { message: 'Books Ordered Successfully' })
+
+        await Promise.all(books.map(async item => {
+            await db.update({
+                TableName: productTable,
+                Key: {
+                    id: item.book.id
+                },
+                UpdateExpression: 'SET stock = :stock, updatedAt = :updatedAt',
+                ExpressionAttributeValues: {
+                    ':stock': item.book.stock - item.quantity,
+                    ':updatedAt': new Date().toISOString()
+                }
+            }).promise()
+        }))
+
+        return response(200, { message: 'Books Ordered Successfully', response: stripeResponse })
     }
     catch(err) {
         console.log(err)

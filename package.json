@@ -11,8 +11,10 @@
   "dependencies": {
     "aws-sdk": "^2.855.0",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^8.2.0",
     "file-type": "^16.3.0",
     "jsonwebtoken": "^8.5.1",
+    "stripe": "^8.140.0",
     "uuid": "^8.3.2"
   }
 }

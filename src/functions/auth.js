@@ -36,6 +36,7 @@ exports.signUp = async event => {
                 password: hashedPassword,
                 name: name,
                 phoneNo: phoneNo,
+                address: '',
                 cart: { items: [] },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()

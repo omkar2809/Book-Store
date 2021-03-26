@@ -17,7 +17,23 @@ exports.getCart = async event => {
                 email: userEmail
             }
         }).promise()
-        return response(200, {cart: user.cart})
+        // ----------------------------
+        let totalSum = 0
+        let books = await Promise.all(user.cart.items.map(async item => {
+            const { Item: book } = await db.get({
+                TableName: productTable,
+                Key: { id: item.bookId }
+            }).promise()
+            if(book) {
+                totalSum += item.quantity * book.price
+                return { quantity: item.quantity, book: book }
+            }
+        }))
+        console.log(books.filter(x => x !== undefined || x !== null))
+        books = books.filter(x => x !== undefined || x !== null)
+        // console.log(books)
+        // -------------------------------
+        return response(200, {cart: user.cart, books: books, totalSum: totalSum})
     }
     catch(err) {
         console.log(err)
@@ -60,6 +76,7 @@ exports.addToCart = async event => {
         } else {
             updatedCartItems.push({
                 bookId: bookId,
+                title: book.title,
                 quantity: newQty
             })
         }
