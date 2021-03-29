@@ -29,6 +29,7 @@ provider:
           Action:
             - dynamodb:*
             - s3:*
+            - ses:*
           Resource: '*'
 
 functions:
@@ -163,6 +164,30 @@ functions:
     events:
     - http:
         path: /uploadDemo
+        method: POST
+        cors: true
+
+  sendOTP:
+    handler: src/functions/auth.sendOTP
+    events:
+    - http:
+        path: /sendOTP
+        method: POST
+        cors: true
+
+  verifyOTP:
+    handler: src/functions/auth.verifyOTP
+    events:
+    - http:
+        path: /verifyOTP
+        method: POST
+        cors: true
+
+  resetPassword:
+    handler: src/functions/auth.resetPassword
+    events:
+    - http:
+        path: /resetPassword
         method: POST
         cors: true
 
