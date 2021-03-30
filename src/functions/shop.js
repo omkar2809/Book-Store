@@ -65,7 +65,7 @@ exports.addBook = async event => {
         const detectedExt = fileInfo.ext
         const detectedMime = fileInfo.mime
         const name = uuid();
-        const key = `${name}-${new Date().toISOString()}.${detectedExt}`
+        const key = `${name}-${Math.floor(100000 + Math.random() * 900000).toString()}.${detectedExt}`
         const uploadedImage = await s3
             .upload({
                 Body: buffer,
@@ -125,14 +125,22 @@ exports.updateBook = async event => {
             return response(403, { message: 'Unauthorized' })
         }
 
-        if(body.imageUrl) {
+        if (body.imageUrl) {
+            const oldImageUrl = book.imageUrl.split('/')
+            console.log('oldImageUrl', oldImageUrl)
+            const oldKey = oldImageUrl[oldImageUrl.length - 1]
+            console.log('oldKey', oldKey)
+            await s3.deleteObject({
+                Bucket: process.env.IMAGE_UPLOAD_BUCKET,
+                Key: oldKey
+            }).promise()
             const imageData = body.imageUrl
             const buffer = Buffer.from(imageData, 'base64');
             const fileInfo = await fileType.fromBuffer(buffer);
             const detectedExt = fileInfo.ext
             const detectedMime = fileInfo.mime
             const name = uuid();
-            const key = `${name}-${new Date().toISOString()}.${detectedExt}`
+            const key = `${name}-${Math.floor(100000 + Math.random() * 900000).toString()}.${detectedExt}`
 
             const uploadedImage = await s3
             .upload({
@@ -190,6 +198,14 @@ exports.deleteBook = async event => {
         if(book.sellerEmail !== sellerEmail && book.sellerId !== sellerId) {
             return response(403, { message: 'Unauthorized' })
         }
+        const imageUrl = book.imageUrl.split('/')
+        console.log('imageUrl', imageUrl)
+        const key = imageUrl[imageUrl.length - 1]
+        console.log('key', key)
+        await s3.deleteObject({
+            Bucket: process.env.IMAGE_UPLOAD_BUCKET,
+            Key: key
+        }).promise()
         await db.delete(params).promise()
         return response(200, { message: 'Book Deleted' })
     }

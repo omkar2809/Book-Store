@@ -159,13 +159,6 @@ functions:
         method: GET
         cors: true
         authorizer: isAuth
-  uploadDemo:
-    handler: src/functions/uploadDemo.handler
-    events:
-    - http:
-        path: /uploadDemo
-        method: POST
-        cors: true
 
   sendOTP:
     handler: src/functions/auth.sendOTP
@@ -190,6 +183,15 @@ functions:
         path: /resetPassword
         method: POST
         cors: true
+  
+  getInvoice:
+    handler: src/functions/order.getInvoice
+    events:
+    - http:
+        path: /getInvoice/{id}
+        method: get
+        cors: true
+        authorizer: isAuth
 
 resources:
   Resources:

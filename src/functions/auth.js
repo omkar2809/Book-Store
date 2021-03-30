@@ -185,7 +185,6 @@ exports.verifyOTP = async event => {
             } else {
                 return response(400, {message: 'Incorrect OTP'})
             }
-            
         }
         else {
             return response(400, {message: 'OTP Expire'})
@@ -202,6 +201,7 @@ exports.resetPassword = async event => {
     const email = body.email
     const password = body.password
     const OTP = body.OTP
+    console.log(body)
     try {
         const { Item: user } = await db.get({
             TableName: usersTable,
@@ -209,6 +209,7 @@ exports.resetPassword = async event => {
                 email: email
             }
         }).promise()
+        console.log(user)
         if (!user) {
             return response(404, { message: 'Email is not registered' })
         }
@@ -221,9 +222,10 @@ exports.resetPassword = async event => {
                     Key: {
                         email: email,
                     },
-                    UpdateExpression: 'SET password = :password, updatedAt = :updatedAt',
+                    UpdateExpression: 'SET password = :password, updatedAt = :updatedAt, OTP = :OTP',
                     ExpressionAttributeValues: {
                         ':password': hashedPassword,
+                        ':OTP': ' ',
                         ':updatedAt': new Date().toISOString()
                     },
                     ReturnValues: 'UPDATED_NEW'

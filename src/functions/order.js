@@ -1,10 +1,21 @@
 require('dotenv').config()
 const AWS = require('aws-sdk')
 const stripe = require('stripe')(process.env.STRIPE_SK)
+const nodemailer = require('nodemailer')
+const sendgridTransport = require('nodemailer-sendgrid-transport')
+const PDFDocument = require("pdfkit")
 const { response } = require('../utils/response')
 const { v4: uuid } = require('uuid')
 
 const db = new AWS.DynamoDB.DocumentClient()
+
+const transporter = nodemailer.createTransport(
+	sendgridTransport({
+		auth: {
+			api_key: process.env.SENDGRID_KEY
+		}
+	})
+)
 
 const usersTable = process.env.USERS_TABLE
 
@@ -136,7 +147,66 @@ exports.getOrders = async event => {
         console.log(orders)
         return response(200, {orders})
     }
-    catch(Err) {
+    catch(err) {
+        console.log(err)
+        return response(400, { message: 'Something went wrong!', error: {err} })
+    }
+}
+
+exports.getInvoice = async event => {
+    const buyerEmail = event.requestContext.authorizer.email
+    const orderId = event.pathParameters.id
+    try {
+        const { Item: order } = await db.get({
+            TableName: ordersTable,
+            Key: {
+                id: orderId
+            }
+        }).promise()
+        console.log(order)
+        if (!order) {
+            return response(400, { message: 'Order not found!' })
+        }
+        if (order.buyerEmail !== buyerEmail) {
+            return response(401, { message: 'Unauthorized' })
+        }
+        const pdfBuffer = await new Promise(resolve => {
+            const doc = new PDFDocument()
+            doc.fontSize(26).text('Invoice', {
+                underline: true,
+            })
+            doc.text('-------------------------------')
+            let totalPrice = 0
+            order.books.forEach(prod => {
+                totalPrice += prod.quantity * prod.book.price
+                doc.fontSize(14).text(prod.book.title + ' - ' + prod.quantity + ' x ' + 'Rs.' + prod.book.price)
+            })
+            doc.text('-------------------------------')
+            doc.fontSize(20).text('Total Price Rs.' + totalPrice)
+            doc.end()
+            const buffers = []
+                doc.on("data", buffers.push.bind(buffers))
+                doc.on("end", () => {
+                const pdfData = Buffer.concat(buffers)
+                resolve(pdfData)
+            })
+        })
+        await transporter.sendMail({
+            to: buyerEmail,
+            from: process.env.SENDER_EMAIL,
+            subject: 'Invoice',
+            html: `
+                <h2>Invoice for Order Id #${order.id}</h2>
+            `,
+            attachments: [{  
+                filename: 'invoice.pdf',
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+            }]
+        })
+        return response(200, {message: 'Invoice send to registered Email'})
+    }
+    catch(err) {
         console.log(err)
         return response(400, { message: 'Something went wrong!', error: {err} })
     }

@@ -16,6 +16,7 @@
     "jsonwebtoken": "^8.5.1",
     "nodemailer": "^6.5.0",
     "nodemailer-sendgrid-transport": "^0.2.0",
+    "pdfkit": "^0.11.0",
     "stripe": "^8.140.0",
     "uuid": "^8.3.2"
   }
