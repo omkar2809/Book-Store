@@ -17,7 +17,9 @@
     "nodemailer": "^6.5.0",
     "nodemailer-sendgrid-transport": "^0.2.0",
     "pdfkit": "^0.11.0",
+    "serverless-webpack": "^5.4.0",
     "stripe": "^8.140.0",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "webpack": "^5.30.0"
   }
 }

@@ -126,7 +126,7 @@ exports.postOrder = async event => {
             }).promise()
         }))
 
-        return response(200, { message: 'Books Ordered Successfully', response: stripeResponse })
+        return response(200, { message: 'Books Ordered Successfully', response: stripeResponse, orderId: orderId })
     }
     catch(err) {
         console.log(err)

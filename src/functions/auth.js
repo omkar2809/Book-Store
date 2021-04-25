@@ -24,7 +24,7 @@ const usersTable = process.env.USERS_TABLE
 exports.signUp = async event => {
     const body = JSON.parse(event.body)
     const email = body.email
-    const name = body.name
+    const username = body.username
     const phoneNo = body.phoneNo
     const password = body.password
     const address = body.address
@@ -47,7 +47,7 @@ exports.signUp = async event => {
                 id: id,
                 email: email,
                 password: hashedPassword,
-                name: name,
+                username: username,
                 phoneNo: phoneNo,
                 address: address,
                 cart: { items: [] },
@@ -102,7 +102,7 @@ exports.login = async event => {
                 const token = jwt.sign({
                     id: user.id,
                     email: user.email
-                }, process.env.JWT_SECRET, { expiresIn: '1h' })
+                }, process.env.JWT_SECRET, { expiresIn: '30d' })
                 return response(200, { message: 'login successfully', token: token })
             }
             else {

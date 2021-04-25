@@ -2,6 +2,12 @@ service: ebook-store-api
 
 frameworkVersion: '2'
 
+# plugins:
+#   - serverless-webpack
+
+# package:
+#   individually: true
+
 custom:
   settings:
     PRODUCTS_TABLE: products
